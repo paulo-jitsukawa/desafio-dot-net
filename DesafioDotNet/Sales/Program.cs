@@ -1,12 +1,21 @@
-﻿using System;
+﻿using Sales.Controllers;
+using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Sales
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public const string HOMEPATH = "../../../../..";
+
+        public static async Task Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            CultureInfo ci = new CultureInfo("en-US");
+            Thread.CurrentThread.CurrentCulture = ci;
+            Thread.CurrentThread.CurrentUICulture = ci;
+
+            await new SalesController(HOMEPATH).Run();
         }
     }
 }
