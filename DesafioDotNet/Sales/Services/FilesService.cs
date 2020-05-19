@@ -1,20 +1,18 @@
 ﻿using Sales.Exceptions;
 using Sales.Model;
 using System;
-using System.Globalization;
 
 namespace Sales.Services
 {
-
     public class FilesService : Service
     {
         public FilesService(DbContext db) : base(db) { }
 
-        public void Fill(string name, string[] rows)
+        public void Fill(string name, string[] content)
         {
             var line = 0;
 
-            foreach (var row in rows)
+            foreach (var row in content)
             {
                 line++;
                 var cols = row.Split('ç');
@@ -57,7 +55,7 @@ namespace Sales.Services
                                 {
                                     Id = int.Parse(itemParameter[0]),
                                     Quantity = int.Parse(itemParameter[1]),
-                                    Price = decimal.Parse(itemParameter[2], NumberStyles.Currency)
+                                    Price = decimal.Parse(itemParameter[2])
                                 };
                                 sale.Items.Add(item);
                             }
