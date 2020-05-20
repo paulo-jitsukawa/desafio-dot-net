@@ -1,7 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Sales.Extensions;
 using Sales.Model;
 using Sales.Services;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 
 namespace Sales.Test
@@ -25,9 +27,11 @@ namespace Sales.Test
         public void ReportTest(string content, int customersCount, int salesmansCount, int bestSaleId, string worstSalesman)
         {
             var db = new DbContext();
-
             var ser = new FilesService(db);
-            ser.Fill("Teste 1", content.Split('\n'));
+            var path = $"{Directory.GetCurrentDirectory()}/SalesReportTest.txt".ToNormalizedPath();
+
+            File.WriteAllText(path, content);
+            ser.Fill(path);
 
             Assert.AreEqual(customersCount, new CustomersService(db).Count);
             Assert.AreEqual(salesmansCount, new SalesmansService(db).Count);
@@ -43,9 +47,11 @@ namespace Sales.Test
         public void SalesTotalTest(string content, string total)
         {
             var db = new DbContext();
-
             var ser = new FilesService(db);
-            ser.Fill("Teste 2", content.Split('\n'));
+            var path = $"{Directory.GetCurrentDirectory()}/SalesTotalTest.txt".ToNormalizedPath();
+
+            File.WriteAllText(path, content);
+            ser.Fill(path);
 
             Assert.AreEqual(decimal.Parse(total), new SalesService(db).Total);
         }

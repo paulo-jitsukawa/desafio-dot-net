@@ -11,14 +11,13 @@ namespace Sales.Services
 
         public string GetWorstSalesmanName()
         {
-            dynamic salesman = null;
-            var price = decimal.MaxValue;
+            dynamic salesman = new { SalesmanName = string.Empty, Total = decimal.MaxValue };
 
             db.Sales
                 .GroupBy(s => s.SalesmanName)
                 .Select(s => new { SalesmanName = s.Key, Total = s.Sum(t => t.Total) })
                 .ToList()
-                .ForEach(s => salesman = s.Total <= price ? s : salesman);
+                .ForEach(s => salesman = s.Total <= salesman.Total ? s : salesman);
 
             return salesman.SalesmanName;
         }

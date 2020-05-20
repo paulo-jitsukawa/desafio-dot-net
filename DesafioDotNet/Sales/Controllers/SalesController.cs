@@ -1,11 +1,9 @@
 ﻿using Sales.Exceptions;
+using Sales.Extensions;
 using Sales.Model;
 using Sales.Services;
 using System;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Sales.Controllers
 {
@@ -14,22 +12,16 @@ namespace Sales.Controllers
     /// </summary>
     public class SalesController
     {
-        private string path;
-        private DirectoryInfo dir;
         private DbContext db;
-
         private CustomersService customersService;
         private FilesService filesService;
         private ReportService reportsService;
         private SalesmansService salesmansService;
         private SalesService salesService;
 
-        public SalesController(string root)
+        public SalesController()
         {
-            path = $"{root.Replace('\\', '/').TrimEnd('/')}/Data";
-            dir = new DirectoryInfo($"{path}/in");
             db = new DbContext();
-
             customersService = new CustomersService(db);
             filesService = new FilesService(db);
             reportsService = new ReportService(db);
@@ -37,66 +29,61 @@ namespace Sales.Controllers
             salesService = new SalesService(db);
         }
 
-        public async Task Run(int sleep = 500)
+        public void Compile(string[] inputs, string output)
         {
-            Console.WriteLine("Sistema iniciado.");
-
-            while (true)
+            if (inputs.Length == 0 || string.IsNullOrWhiteSpace(output))
             {
-                var newFile = false;
+                return;
+            }
 
-                Directory.CreateDirectory($"{path}/in");
-                Directory.CreateDirectory($"{path}/out");
-
-                foreach (var file in dir.GetFiles()?.Where(d => !d.Name.Contains(".processado")))
+            try
+            {
+                foreach (var input in inputs)
                 {
-                    newFile = true;
+                    var path = input.ToNormalizedPath();
 
-                    try
-                    {
-                        Console.Write($"Processando {file.Name}... ");
+                    Console.Write($"Processando {Path.GetFileName(path)}... ");
 
-                        var lines = await File.ReadAllLinesAsync(file.FullName);
-                        filesService.Fill(file.Name, lines);
+                    filesService.Fill(path);
 
-                        File.Move(file.FullName, $"{file.FullName}.processado");
-
-                        Console.WriteLine(" OK!");
-                    }
-                    catch (FileInvalidFormatException e)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine($"ERRO: {e.Message}" + e.InnerException == null ? "" : $" ({e.InnerException.Message}).");
-                        Console.WriteLine("Pressione qualquer tecla para continuar...");
-                        Console.ReadLine();
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine();
-                        Console.WriteLine($"ERRO INESPERADO: {e.Message}");
-                        Console.WriteLine("Pressione qualquer tecla para continuar...");
-                        Console.ReadLine();
-                    }
+                    Console.WriteLine("OK!");
                 }
+            }
+            catch (FileInvalidFormatException e)
+            {
+                Console.WriteLine("ERRO!");
+                Console.WriteLine(e.InnerException == null ? e.Message : $"{e.Message} ({e.InnerException.Message}).");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERRO!");
+                Console.WriteLine($"ERRO INESPERADO: {e.Message}");
+            }
 
-                if (newFile)
-                {
-                    var report = new Report
-                    {
-                        CustomersCount = customersService.Count,
-                        SalesmansCount = salesmansService.Count,
-                        BestSaleId = salesService.GetBestSaleId(),
-                        WorstSalesman = salesmansService.GetWorstSalesmanName()
-                    };
+            var report = new Report
+            {
+                CustomersCount = customersService.Count,
+                SalesmansCount = salesmansService.Count,
+                BestSaleId = salesService.GetBestSaleId(),
+                WorstSalesman = salesmansService.GetWorstSalesmanName()
+            };
 
-                    File.WriteAllText
-                    (
-                        $"{path}/out/Report.txt",
-                        reportsService.GetReport(report)
-                    );
-                }
+            try
+            {
+                Console.Write($"Gerando Report.txt... ");
 
-                Thread.Sleep(sleep);
+                File.WriteAllText
+                (
+                    $"{output}/Report.txt".ToNormalizedPath(),
+                    reportsService.GetReport(report)
+                );
+
+                Console.WriteLine("OK!");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERRO!");
+                Console.WriteLine(e.Message);
             }
         }
     }
